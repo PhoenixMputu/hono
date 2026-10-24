@@ -60,6 +60,27 @@ function runner(
         expect(root.innerHTML).toBe('<p>1</p>')
       })
 
+      it.each([null, false])('with use() and fallback={%s}', async (fallback) => {
+        let resolve: (value: number) => void = () => {}
+        const promise = new Promise<number>((_resolve) => (resolve = _resolve))
+        const Content = () => {
+          const num = use(promise)
+          return <p>{num}</p>
+        }
+        const App = (
+          <div>
+            <Suspense fallback={fallback}>
+              <Content />
+            </Suspense>
+          </div>
+        )
+        render(App, root)
+        expect(root.innerHTML).toBe('<div></div>')
+        resolve(1)
+        await new Promise((resolve) => setTimeout(resolve))
+        expect(root.innerHTML).toBe('<div><p>1</p></div>')
+      })
+
       it('with use() update', async () => {
         const counterMap: Record<number, Promise<number>> = {}
         const getCounter = (count: number) => (counterMap[count] ||= Promise.resolve(count + 1))

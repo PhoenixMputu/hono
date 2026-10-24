@@ -691,7 +691,8 @@ export const build = (context: Context, node: NodeObject, children?: Child[]): v
           }
         }
       })
-      if (fallback) {
+      // `null` and `false` are valid fallbacks that render nothing
+      if (fallback !== undefined) {
         if (context[0] === 1) {
           // low priority render
           context[1] = true
