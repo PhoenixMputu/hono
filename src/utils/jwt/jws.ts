@@ -18,13 +18,38 @@ type KeyAlgorithm =
   | (EcdsaParams & EcKeyImportParams)
   | HmacImportParams
 
-// Extending the JsonWebKey interface to include the "kid" property.
-// https://datatracker.ietf.org/doc/html/rfc7515#section-4.1.4
-export interface HonoJsonWebKey extends JsonWebKey {
+/**
+ * A JSON Web Key with the "kid" property.
+ * The members of `JsonWebKey` are declared here because `JsonWebKey` is not declared without the DOM lib.
+ * https://datatracker.ietf.org/doc/html/rfc7517
+ * https://datatracker.ietf.org/doc/html/rfc7515#section-4.1.4
+ */
+export interface HonoJsonWebKey {
+  alg?: string
+  crv?: string
+  d?: string
+  dp?: string
+  dq?: string
+  e?: string
+  ext?: boolean
+  k?: string
+  key_ops?: string[]
   kid?: string
+  kty?: string
+  n?: string
+  oth?: { d?: string; r?: string; t?: string }[]
+  p?: string
+  q?: string
+  qi?: string
+  use?: string
+  x?: string
+  y?: string
 }
 
-export type SignatureKey = string | HonoJsonWebKey | CryptoKey
+/**
+ * `CryptoKey` is only declared as a value without the DOM lib, for example with `@types/node` before v26.
+ */
+export type SignatureKey = string | HonoJsonWebKey | InstanceType<typeof CryptoKey>
 
 export async function signing(
   privateKey: SignatureKey,

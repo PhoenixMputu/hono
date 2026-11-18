@@ -2,7 +2,7 @@
 import { vi } from 'vitest'
 import { encodeBase64, encodeBase64Url } from '../encode'
 import { AlgorithmTypes } from './jwa'
-import type { HonoJsonWebKey } from './jws'
+import type { HonoJsonWebKey, SignatureKey } from './jws'
 import { signing } from './jws'
 import * as JWT from './jwt'
 import { verifyWithJwks } from './jwt'
@@ -1871,5 +1871,21 @@ describe('PEM parsing', async () => {
     const verified = await JWT.verify(token, privateKey, 'EdDSA')
 
     expect(verified).toEqual(payload)
+  })
+})
+
+// https://github.com/honojs/hono/issues/5432
+describe('JWT key types', () => {
+  it('Should not depend on the DOM-only `JsonWebKey` and `CryptoKey` types', () => {
+    expectTypeOf<HonoJsonWebKey>().toExtend<JsonWebKey>()
+    expectTypeOf<JsonWebKey>().toExtend<HonoJsonWebKey>()
+    expectTypeOf<CryptoKey>().toExtend<SignatureKey>()
+    expectTypeOf<string>().toExtend<SignatureKey>()
+  })
+
+  it('Should reject values that are not keys', () => {
+    expectTypeOf<SignatureKey>().not.toBeAny()
+    expectTypeOf<Promise<CryptoKey>>().not.toExtend<SignatureKey>()
+    expectTypeOf<number>().not.toExtend<SignatureKey>()
   })
 })
