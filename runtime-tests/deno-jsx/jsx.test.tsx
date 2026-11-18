@@ -1,6 +1,7 @@
 /** @jsxImportSource ../../src/jsx */
 import { assertEquals, assertThrows } from '@std/assert'
 import { Style, css } from '../../src/helper/css/index.ts'
+import { createContext, useContext } from '../../src/jsx/context.ts'
 import { Suspense, renderToReadableStream } from '../../src/jsx/streaming.ts'
 import type { HtmlEscapedString } from '../../src/utils/html.ts'
 import { HtmlEscapedCallbackPhase, resolveCallback } from '../../src/utils/html.ts'
@@ -233,4 +234,24 @@ Deno.test('JSX: function form actions', () => {
   // react-jsx : <form><button>
   // precompile : <form ><button >
   assertEquals(html.toString().replace(/ >/g, '>'), '<form><button>go</button></form>')
+})
+
+// https://github.com/honojs/hono/issues/4326
+Deno.test('JSX: context through an intrinsic element', async () => {
+  const ThemeContext = createContext('default')
+  const Consumer = () => <span>{useContext(ThemeContext)}</span>
+  const AsyncConsumer = async () => {
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    return <span>{useContext(ThemeContext)}</span>
+  }
+  const html = (
+    <ThemeContext.Provider value='dark'>
+      <div>
+        <Consumer />
+        <AsyncConsumer />
+      </div>
+    </ThemeContext.Provider>
+  )
+
+  assertEquals(String(await html.toString()), '<div><span>dark</span><span>dark</span></div>')
 })

@@ -6,6 +6,7 @@ import { Hono } from '../hono'
 import { HtmlEscapedCallbackPhase } from '../utils/html'
 import type { HtmlEscapedCallback } from '../utils/html'
 import { PERMALINK } from './constants'
+import { createContext, useContext } from './context'
 import { jsxAttr, jsxTemplate } from './jsx-runtime'
 import { renderToReadableStream } from './streaming'
 
@@ -188,6 +189,51 @@ describe('jsx-runtime', () => {
         }
       }
     )
+  })
+
+  // https://github.com/honojs/hono/issues/4326
+  describe('precompiled templates inside a context provider', () => {
+    const ThemeContext = createContext('default')
+    const Consumer = () => <span>{useContext(ThemeContext)}</span>
+
+    it('Should provide the context to a component inside a template', () => {
+      const element = (
+        <ThemeContext.Provider value='dark'>
+          {jsxTemplate`<div>${<Consumer />}</div>`}
+        </ThemeContext.Provider>
+      )
+      expect(element.toString()).toBe('<div><span>dark</span></div>')
+    })
+
+    it('Should provide the context to components in nested templates and arrays', () => {
+      const element = (
+        <ThemeContext.Provider value='dark'>
+          {jsxTemplate`<ul>${[1, 2].map((i) => jsxTemplate`<li>${i}${<Consumer />}</li>`)}</ul>`}
+        </ThemeContext.Provider>
+      )
+      expect(element.toString()).toBe(
+        '<ul><li>1<span>dark</span></li><li>2<span>dark</span></li></ul>'
+      )
+    })
+
+    it('Should provide the context to an async component inside a template', async () => {
+      const AsyncConsumer = async () => {
+        await Promise.resolve()
+        return <span>{useContext(ThemeContext)}</span>
+      }
+      const element = (
+        <ThemeContext.Provider value='dark'>
+          {jsxTemplate`<div>${<AsyncConsumer />}</div>`}
+        </ThemeContext.Provider>
+      )
+      expect(String(await element.toString())).toBe('<div><span>dark</span></div>')
+    })
+
+    it('Should still render a template without JSX elements immediately', () => {
+      const template = jsxTemplate`<div>${'<b>'}${1}</div>`
+      expect(template).toBeInstanceOf(String)
+      expect(template.toString()).toBe('<div>&lt;b&gt;1</div>')
+    })
   })
 
   it('Should drop style values containing ";" in jsxAttr() to prevent CSS injection', () => {
